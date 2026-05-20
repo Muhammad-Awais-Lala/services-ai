@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the system, either a customer or a service provider.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "provider"] }
+      },
+      "required": ["uid", "fullName", "email", "role"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a service booking request.",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "providerId": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "providerId", "category", "description", "date", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A message in a chat conversation.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "booking"] },
+        "bookingId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Store for user profiles."
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Store for service bookings."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a conversation."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "ServiceLink AI",
+  "description": "An AI-powered service booking platform connecting customers with professional service providers via a seamless chat interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
