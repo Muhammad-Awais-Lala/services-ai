@@ -1,8 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
 export interface AuthenticatedUser {
-  email: string; // The user's ID
+  email: string;
   role: 'customer' | 'provider';
   accessToken: string;
 }
@@ -36,15 +37,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('servicelink_current_user');
-    if (storedUser) {
+    const loadUser = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        const storedUser = await AsyncStorage.getItem('servicelink_current_user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
       } catch (e) {
         console.error('Error reading current user:', e);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    loadUser();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -55,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password
       });
       const data = res.data;
-      // Returns { access_token: "...", token_type: "bearer" }
 
       const authUser: AuthenticatedUser = {
         email,
@@ -63,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         accessToken: data.access_token
       };
 
-      localStorage.setItem('servicelink_current_user', JSON.stringify(authUser));
+      await AsyncStorage.setItem('servicelink_current_user', JSON.stringify(authUser));
       setUser(authUser);
     } catch (err: any) {
       throw new Error(err.response?.data?.detail || 'Login failed');
@@ -76,22 +81,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/auth/signup`, { email, password, name: fullName });
-      console.log("pay res======>", res);
+      console.log("Signup response:", res);
 
-      // Auto-login after signup, or just throw if we need to verify email
-      // PDF says: "Open the verification link from email or server logs. POST /auth/login"
-      // If we can't auto-login, we just tell the user to verify.
-      throw new Error('Signup successful! Please check your email/server logs to verify your account before logging in.');
+      const authUser: AuthenticatedUser = {
+        email,
+        role,
+        accessToken: res.data.access_token
+      };
+
+      await AsyncStorage.setItem('servicelink_current_user', JSON.stringify(authUser));
+      setUser(authUser);
     } catch (err: any) {
-      if (err.message && err.message.includes('Signup successful!')) throw err;
       throw new Error(err.response?.data?.detail || 'Signup failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('servicelink_current_user');
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('servicelink_current_user');
+    } catch (e) {
+      console.error('Error logging out:', e);
+    }
     setUser(null);
   };
 
@@ -99,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await axios.post(`${API_BASE}/auth/forgot-password`, { email });
     } catch (err: any) {
-      throw new Error(err.response?.data?.detail || 'Failed to request reset');
+      throw new Error(err.response?.data?.detail || 'Failed to send reset link');
     }
   };
 
@@ -111,11 +123,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const value: AuthContextType = {
+    user,
+    role: user?.role ?? null,
+    loading,
+    login,
+    signup,
+    logout,
+    forgotPassword,
+    resetPassword,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, role: user?.role || null, loading, login, signup, logout, forgotPassword, resetPassword }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
