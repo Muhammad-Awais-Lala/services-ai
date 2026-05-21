@@ -112,42 +112,6 @@ export default function Signup() {
               editable={!loading}
             />
           </View>
-
-          {/* Role Selection */}
-          <View className="mb-5">
-            <Text className="text-neutral-300 text-sm font-medium mb-3">I am a</Text>
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                className={cn(
-                  'flex-1 py-3 rounded-xl border',
-                  role === 'customer'
-                    ? 'bg-indigo-600/20 border-indigo-500'
-                    : 'bg-white/5 border-white/10'
-                )}
-                onPress={() => setRole('customer')}
-                disabled={loading}
-              >
-                <Text className={cn('text-center font-medium text-sm', role === 'customer' ? 'text-indigo-300' : 'text-neutral-400')}>
-                  Customer
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className={cn(
-                  'flex-1 py-3 rounded-xl border',
-                  role === 'provider'
-                    ? 'bg-indigo-600/20 border-indigo-500'
-                    : 'bg-white/5 border-white/10'
-                )}
-                onPress={() => setRole('provider')}
-                disabled={loading}
-              >
-                <Text className={cn('text-center font-medium text-sm', role === 'provider' ? 'text-indigo-300' : 'text-neutral-400')}>
-                  Provider
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Error Message */}
           {error ? (
             <View className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 mb-5">

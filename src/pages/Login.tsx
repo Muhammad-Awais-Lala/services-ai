@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react-native';
 import { cn } from '../lib/utils';
 
 export default function Login() {
@@ -9,16 +10,15 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigation = useNavigation();
   const { login } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     setLoading(true);
     setError('');
     try {
       await login(email, password);
-      navigate('/');
+      navigation.navigate('Home');
     } catch (err: any) {
       setError(err.message || 'Failed to login');
     } finally {
@@ -27,105 +27,86 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans selection:bg-indigo-500/30">
-      
-      {/* Background Gradients */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/20 blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/20 blur-[120px]" />
-      </div>
+    <View className="flex-1 bg-neutral-950 text-neutral-50 justify-center py-12 px-6 relative overflow-hidden font-sans">
+      <View className="absolute inset-0 pointer-events-none">
+        <View className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/20 blur-[120px]" />
+        <View className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/20 blur-[120px]" />
+      </View>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Sparkles size={32} className="text-white" />
-          </div>
-        </div>
-        <h2 className="text-center text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-200 to-purple-200">
+      <View className="mx-auto w-full max-w-md relative z-10">
+        <View className="flex justify-center mb-6">
+          <View className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <Sparkles size={32} color="white" />
+          </View>
+        </View>
+        <Text className="text-center text-3xl font-extrabold text-transparent bg-gradient-to-r from-indigo-200 to-purple-200">
           Welcome Back
-        </h2>
-        <p className="mt-2 text-center text-sm text-neutral-400">
+        </Text>
+        <Text className="mt-2 text-center text-sm text-neutral-400">
           Or{' '}
-          <Link to="/signup" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+          <Text
+            className="font-medium text-indigo-400"
+            onPress={() => navigation.navigate('Signup')}
+          >
             create a new account
-          </Link>
-        </p>
-      </div>
+          </Text>
+        </Text>
+      </View>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-        <div className="bg-black/40 py-8 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border border-white/10 backdrop-blur-xl">
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-neutral-300">
+      <View className="mt-8 mx-auto w-full max-w-md relative z-10">
+        <View className="bg-black/40 py-8 px-4 shadow-2xl rounded-2xl border border-white/10">
+          <View className="space-y-6">
+            <View>
+              <Text className="block text-sm font-medium text-neutral-300">
                 Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl shadow-inner placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 text-white transition-all sm:text-sm"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
+              </Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                placeholderTextColor="#A1A1AA"
+                keyboardType="email-address"
+                className="mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+              />
+            </View>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-neutral-300">
-                  Password
-                </label>
-                <div className="text-sm">
-                  <Link to="/forgot-password" className="font-medium text-indigo-400 hover:text-indigo-300">
-                    Forgot your password?
-                  </Link>
-                </div>
-              </div>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl shadow-inner placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 text-white transition-all sm:text-sm"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
+            <View>
+              <Text className="block text-sm font-medium text-neutral-300">
+                Password
+              </Text>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor="#A1A1AA"
+                secureTextEntry
+                className="mt-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
+              />
+            </View>
 
-            {error && (
-              <div className="text-rose-400 text-sm bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
+            {error ? (
+              <Text className="text-rose-400 text-sm bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
                 {error}
-              </div>
-            )}
+              </Text>
+            ) : null}
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className={cn(
-                  "w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-900 focus:ring-indigo-500 transition-all",
-                  loading && "opacity-70 cursor-not-allowed"
-                )}
-              >
-                {loading ? <Loader2 size={20} className="animate-spin" /> : (
-                  <>
-                    Sign in
-                    <ArrowRight size={18} className="ml-2" />
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+            <TouchableOpacity
+              onPress={handleLogin}
+              disabled={loading}
+              className={cn(
+                "w-full flex justify-center items-center py-3 px-4 rounded-xl bg-indigo-600",
+                loading && "opacity-70"
+              )}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text className="text-sm font-semibold text-white">Login</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
   );
 }

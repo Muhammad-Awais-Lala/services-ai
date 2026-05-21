@@ -23,67 +23,81 @@ export function useServiceAgent() {
     setTraceEvents([]);
 
     try {
-      const res = await fetch(`${API_BASE}/request`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.accessToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify({
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE}/request`);
+        xhr.setRequestHeader('Authorization', `Bearer ${user.accessToken}`);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Accept', 'text/event-stream');
+
+        let seenBytes = 0;
+        let buffer = '';
+
+        const processChunk = (chunk: string) => {
+          buffer += chunk;
+          const parts = buffer.split('\n\n');
+          
+          // Keep the last part in buffer if it's incomplete
+          buffer = parts.pop() || '';
+          
+          for (const block of parts) {
+            if (!block.startsWith('data: ')) continue;
+            
+            try {
+              const eventStr = block.slice(6);
+              const event = JSON.parse(eventStr);
+              
+              if (event.type === 'agent_start' || event.type === 'log') {
+                setTraceEvents(prev => [...prev, { agent: event.agent || 'System', message: event.message }]);
+              } else if (event.type === 'done') {
+                setThreadId(event.task_id);
+                setStatus(event.status);
+                if (event.assistant_message) {
+                  setMessages(prev => [...prev, {
+                    id: (Date.now() + 1).toString(),
+                    role: 'assistant',
+                    content: event.assistant_message,
+                  }]);
+                }
+              } else if (event.type === 'error') {
+                reject(new Error(event.message));
+              }
+            } catch (e) {
+              console.error('Error parsing SSE block', block, e);
+            }
+          }
+        };
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 3 || xhr.readyState === 4) {
+            const textResponse = xhr.responseText;
+            const chunk = textResponse.slice(seenBytes);
+            seenBytes = textResponse.length;
+
+            if (chunk) {
+              processChunk(chunk);
+            }
+          }
+
+          if (xhr.readyState === 4) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              if (xhr.status === 401) logout();
+              reject(new Error(`HTTP ${xhr.status}`));
+            }
+          }
+        };
+
+        xhr.onerror = (err) => {
+          reject(err);
+        };
+
+        xhr.send(JSON.stringify({
           text,
           thread_id: threadId || null
-        })
+        }));
       });
-
-      if (!res.ok) {
-        if (res.status === 401) logout();
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      if (!res.body) throw new Error('No response body');
-      
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
-        
-        // Keep the last part in buffer if it's incomplete
-        buffer = parts.pop() || '';
-        
-        for (const block of parts) {
-          if (!block.startsWith('data: ')) continue;
-          
-          try {
-            const eventStr = block.slice(6);
-            const event = JSON.parse(eventStr);
-            
-            if (event.type === 'agent_start' || event.type === 'log') {
-              setTraceEvents(prev => [...prev, { agent: event.agent || 'System', message: event.message }]);
-            } else if (event.type === 'done') {
-              setThreadId(event.task_id);
-              setStatus(event.status);
-              if (event.assistant_message) {
-                setMessages(prev => [...prev, {
-                  id: (Date.now() + 1).toString(),
-                  role: 'assistant',
-                  content: event.assistant_message,
-                }]);
-              }
-            } else if (event.type === 'error') {
-              throw new Error(event.message);
-            }
-          } catch (e) {
-            console.error('Error parsing SSE block', block, e);
-          }
-        }
-      }
     } catch (err) {
       console.error('Agent error:', err);
       setStatus('idle');
